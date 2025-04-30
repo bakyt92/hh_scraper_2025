@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  scraper:
+    build: .
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: "no"
