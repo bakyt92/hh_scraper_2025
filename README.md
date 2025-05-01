@@ -39,6 +39,26 @@ Edit the following variables in `scraper.py` to customize your search:
 - `LOCATION`: The city or region to search in
 - `PAGES_TO_SCRAPE`: Number of pages to scrape
 
+### Headful Mode
+
+The scraper now runs in headful mode by default, allowing you to see the Chrome browser in action during the scraping process. This is useful for debugging and understanding how the scraper interacts with the website.
+
+#### Running in Headful Mode with Docker
+
+To run the scraper in headful mode with Docker on macOS:
+
+1. Allow X11 forwarding on your host machine:
+   ```
+   xhost +localhost
+   ```
+
+2. Run the container with docker-compose:
+   ```
+   docker-compose up
+   ```
+
+Note: You may need to install XQuartz on macOS to enable X11 forwarding.
+
 ### Output
 
 The scraped data will be saved to the `data` directory in CSV format with a timestamp in the filename.

@@ -1,10 +1,35 @@
-version: '3'
+version: '3.8'
 
 services:
   scraper:
     build: .
-    volumes:
-      - ./data:/app/data
     environment:
+      - DISPLAY=${DISPLAY}
+      - XAUTHORITY=/tmp/.Xauthority
       - PYTHONUNBUFFERED=1
-    restart: "no"
+      - CHROME_BIN=/usr/bin/google-chrome
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./data:/app/data
+      - ~/.Xauthority:/tmp/.Xauthority:ro
+      - ./screenshots:/app/screenshots
+      - ./html_snapshots:/app/html_snapshots
+      - ./logs:/app/logs
+    shm_size: '2gb'
+    restart: unless-stopped
+    networks:
+      - scraper-net
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=65536k
+    healthcheck:
+      test: ["CMD", "ls", "/app/data"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    stop_grace_period: 30s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  scraper-net:
+    driver: bridge

@@ -1,43 +1,59 @@
-FROM python:3.10-slim
+# Use official Python image
+FROM python:3.9-slim
 
-# Set working directory
-WORKDIR /app
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DISPLAY=host.docker.internal:0
+ENV CHROME_BIN=/usr/bin/google-chrome
 
-# Install Chrome and dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     unzip \
     xvfb \
+    xauth \
     libxi6 \
     libgconf-2-4 \
-    default-jdk \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libnspr4 \
+    libnss3 \
+    libxss1 \
+    libxtst6 \
+    libxkbcommon-x11-0 \
+    libgbm-dev \
+    libdrm2 \
+    x11-utils \
+    xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/*
+# Install Chromium and create Chrome symlink
+RUN apt-get update && \
+    apt-get install -y chromium chromium-driver && \
+    ln -s /usr/bin/chromium /usr/bin/google-chrome && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Chrome WebDriver
-RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1) \
-    && CHROME_DRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}) \
-    && wget -q https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}/chromedriver_linux64.zip \
-    && unzip chromedriver_linux64.zip -d /usr/local/bin \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm chromedriver_linux64.zip
+# Set working directory
+WORKDIR /app
 
-# Copy requirements and install dependencies
+# Copy requirements first for caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create data directory
-RUN mkdir -p /app/data
+RUN mkdir -p /app/logs
 
-# Copy source code
+# Copy project files
 COPY . .
 
-# Run the scraper
+# Add Xvfb init script
+RUN echo '#!/bin/bash\n\
+Xvfb :99 -screen 0 1024x768x24 &\n\
+export DISPLAY=:99\n\
+exec "$@"' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "scraper.py"]
